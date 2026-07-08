@@ -5,14 +5,21 @@ import QuickLog from "@/components/QuickLog";
 import Timeline from "@/components/Timeline";
 import DeleteButton from "@/components/DeleteButton";
 import { deleteContact } from "@/lib/actions/contacts";
-import type { Contact, Interaction, Reminder } from "@/lib/types";
-import { fmtDate, relTime } from "@/lib/utils";
+import InvestorProfileCard from "@/components/InvestorProfileCard";
+import type { Contact, ImportantDate, Interaction, InvestorProfile, Reminder } from "@/lib/types";
+import { fmtDate, fmtMoney, relTime } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function ContactPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
-  const [{ data: contact }, { data: interactions }, { data: reminders }] = await Promise.all([
+  const [
+    { data: contact },
+    { data: interactions },
+    { data: reminders },
+    { data: profile },
+    { data: participations },
+  ] = await Promise.all([
     supabase.from("contacts").select("*").eq("id", params.id).single(),
     supabase
       .from("interactions")
@@ -26,10 +33,17 @@ export default async function ContactPage({ params }: { params: { id: string } }
       .eq("contact_id", params.id)
       .neq("status", "done")
       .order("due_at"),
+    supabase.from("investor_profiles").select("*").eq("contact_id", params.id).maybeSingle(),
+    supabase
+      .from("deal_participations")
+      .select("*, deals(id, name)")
+      .eq("contact_id", params.id),
   ]);
 
   if (!contact) notFound();
   const c = contact as Contact;
+  const showInvestor =
+    !!profile || ["investor", "prospect", "lender"].includes(c.relationship_type);
 
   return (
     <div className="space-y-4">
@@ -74,6 +88,31 @@ export default async function ContactPage({ params }: { params: { id: string } }
         </div>
 
         <div className="space-y-4">
+          {showInvestor && (
+            <InvestorProfileCard contactId={c.id} profile={profile as InvestorProfile | null} />
+          )}
+
+          {((participations as any[]) || []).length > 0 && (
+            <div className="card space-y-2">
+              <div className="text-xs uppercase tracking-wide text-muted">Deals</div>
+              {(participations as any[]).map((p) => (
+                <div key={p.id} className="text-sm">
+                  <Link href={`/deals/${p.deals?.id}`} className="text-teal hover:underline">
+                    {p.deals?.name}
+                  </Link>{" "}
+                  <span className="chip">{p.role.replace("_", "-")}</span>
+                  {p.amount && <span className="text-gold ml-1">{fmtMoney(Number(p.amount))}</span>}
+                  {p.rate != null && <span className="text-muted ml-1">@ {p.rate}%</span>}
+                  {((p.key_dates as ImportantDate[]) || []).map((kd, i) => (
+                    <div key={i} className="text-xs text-muted ml-1">
+                      {kd.label}: {fmtDate(kd.date)}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="card space-y-2 text-sm">
             <div className="text-xs uppercase tracking-wide text-muted">Details</div>
             {c.emails.map((e) => (
