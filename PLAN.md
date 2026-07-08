@@ -3,9 +3,8 @@
 Single-user, investor-relations-first personal CRM for Kevin Simpson (AK Capital
 Investments). Dex replacement. Runs free forever on Vercel + Supabase free tiers.
 
-**Location:** this app lives in `ir-crm/` inside the `sue-ai-brain` repo. On Vercel,
-set the project **Root Directory** to `ir-crm`. The MCP server lives in
-`ir-crm/mcp-server/`.
+**Location:** this repo (`kevinsimpson9/crm`) is the app root — import it into
+Vercel as-is. The MCP server lives in `/mcp-server`.
 
 ## Stack
 
