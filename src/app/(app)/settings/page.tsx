@@ -1,15 +1,18 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import GoogleControls from "@/components/GoogleControls";
+import MailerLiteControls from "@/components/MailerLiteControls";
 import { fmtDateTime } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const admin = createAdminClient();
-  const [{ data: googleToken }, { data: syncStates }] = await Promise.all([
+  const [{ data: googleToken }, { data: syncStates }, { data: deals }] = await Promise.all([
     admin.from("google_tokens").select("id, google_email, updated_at").eq("id", 1).maybeSingle(),
     admin.from("sync_state").select("*"),
+    admin.from("deals").select("id, name").order("created_at"),
   ]);
+  const mlConfigured = !!process.env.MAILERLITE_API_KEY;
 
   const sync: Record<string, string | null> = {};
   for (const s of (syncStates as any[]) || []) sync[s.key] = s.last_synced_at;
@@ -36,6 +39,25 @@ export default async function SettingsPage() {
           <span>Calendar last sync: {sync.gcal ? fmtDateTime(sync.gcal) : "never"}</span>
         </div>
         <GoogleControls connected={!!googleToken} />
+      </div>
+
+      <div className="card space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="text-sm font-medium">MailerLite</div>
+          <span className={mlConfigured ? "chip-teal" : "chip"}>
+            {mlConfigured ? "API key set" : "no API key"}
+          </span>
+        </div>
+        <p className="text-xs text-muted">
+          Two-way: pull subscribers/groups and match to contacts by email; push a contact segment
+          (e.g. “Avenue NDA signers”) into a MailerLite group. Free tier limit: 1,000 subscribers.
+          Last sync: {sync.mailerlite ? fmtDateTime(sync.mailerlite) : "never"}.
+        </p>
+        {mlConfigured ? (
+          <MailerLiteControls deals={((deals as any[]) || []).map((d) => ({ id: d.id, name: d.name }))} />
+        ) : (
+          <p className="text-xs text-muted">Set MAILERLITE_API_KEY in your environment to enable.</p>
+        )}
       </div>
     </div>
   );

@@ -19,6 +19,7 @@ export default async function ContactPage({ params }: { params: { id: string } }
     { data: reminders },
     { data: profile },
     { data: participations },
+    { data: mailerlite },
   ] = await Promise.all([
     supabase.from("contacts").select("*").eq("id", params.id).single(),
     supabase
@@ -38,6 +39,7 @@ export default async function ContactPage({ params }: { params: { id: string } }
       .from("deal_participations")
       .select("*, deals(id, name)")
       .eq("contact_id", params.id),
+    supabase.from("mailerlite_sync").select("*").eq("contact_id", params.id).maybeSingle(),
   ]);
 
   if (!contact) notFound();
@@ -150,6 +152,29 @@ export default async function ContactPage({ params }: { params: { id: string } }
               <div className="pt-2 border-t border-edge whitespace-pre-wrap text-muted">{c.notes}</div>
             )}
           </div>
+
+          {mailerlite && (
+            <div className="card space-y-2">
+              <div className="text-xs uppercase tracking-wide text-muted">MailerLite</div>
+              <div className="flex flex-wrap gap-1.5">
+                <span
+                  className={
+                    (mailerlite as any).subscription_status === "active" ? "chip-teal" : "chip"
+                  }
+                >
+                  {(mailerlite as any).subscription_status || "unknown"}
+                </span>
+                {((mailerlite as any).groups as string[]).map((g) => (
+                  <span key={g} className="chip-gold">
+                    {g}
+                  </span>
+                ))}
+              </div>
+              <div className="text-xs text-muted">
+                Last synced {fmtDate((mailerlite as any).last_synced_at)}
+              </div>
+            </div>
+          )}
 
           {(reminders as Reminder[])?.length > 0 && (
             <div className="card space-y-2">
