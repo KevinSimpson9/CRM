@@ -59,6 +59,30 @@ export default async function SettingsPage() {
           <p className="text-xs text-muted">Set MAILERLITE_API_KEY in your environment to enable.</p>
         )}
       </div>
+
+      <div className="card space-y-3">
+        <div className="text-sm font-medium">Channel adapters (iMessage · WhatsApp · anything)</div>
+        <p className="text-xs text-muted">
+          Any external MCP bridge or script can log messages into the timeline via{" "}
+          <code className="text-teal">POST {process.env.APP_URL || ""}/api/ingest</code> with{" "}
+          <code>Authorization: Bearer INGEST_TOKEN</code>, or via the MCP server&apos;s{" "}
+          <code>ingest_interaction</code> tool. Deduped on external_id. Setup for the open-source
+          iMessage and WhatsApp MCP bridges is in the README.
+        </p>
+        <p className="text-xs text-muted">
+          LinkedIn and Instagram have no legitimate free DM API — no scrapers here. Use the
+          bookmarklet instead: on a profile page it opens a pre-filled quick-log. Drag this to your
+          bookmarks bar:{" "}
+          <a
+            className="text-teal hover:underline"
+            href={`javascript:(()=>{const n=document.title.split('|')[0].split(/[-–(]/)[0].replace(/^\\(\\d+\\)\\s*/,'').trim();window.open('${
+              process.env.APP_URL || ""
+            }/quicklog?name='+encodeURIComponent(n)+'&note='+encodeURIComponent('re: '+location.href),'_blank');})()`}
+          >
+            Log to CRM
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
