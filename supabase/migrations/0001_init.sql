@@ -4,6 +4,14 @@
 
 create extension if not exists pg_trgm;
 
+-- Supabase may have pg_trgm pre-installed in its "extensions" schema, where
+-- unqualified gin_trgm_ops / similarity() references can fail. pg_trgm is
+-- relocatable — move it to public; no-op (caught) if it's already there.
+do $$ begin
+  execute 'alter extension pg_trgm set schema public';
+exception when others then null;
+end $$;
+
 -- ---------------------------------------------------------------------------
 -- helpers
 -- ---------------------------------------------------------------------------
